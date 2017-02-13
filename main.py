@@ -57,6 +57,10 @@ def generate_qudratic():
 def main(quadratic, textures):
     current_texture = 0
     size = 4
+    auto_move = True
+    auto_move = False
+    rotate = [0, 0]
+
     #glTranslatef(0.0,0.0, -15.0)
     glTranslatef(0.0,0.0, -(size / 2))
 
@@ -80,15 +84,32 @@ def main(quadratic, textures):
                 pygame.quit()
                 quit()
 
-        glRotatef(0.1, 0, 1, 0)
-        #glTranslatef(0.0,0.0, -0.001)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         glPushMatrix()
         glTranslatef(0, -3.8, 0)
-        glRotatef(-90, 1, 0, 0)
+        
+        if auto_move:
+            glRotatef(rotate[0], 0, 1, 0)
+            rotate[0] += 0.5
+        else:
+            if keypress[pygame.K_LEFT]:
+                rotate[0] += -0.1
+            if keypress[pygame.K_RIGHT]:
+                rotate[0] += +0.1
+            if keypress[pygame.K_UP]:
+                rotate[1] += -0.1
+            if keypress[pygame.K_DOWN]:
+                rotate[1] += +0.1
+            speed = 10
+            glRotatef(rotate[1] * speed, 1, 0, 0)
+            glRotatef(rotate[0] * speed, 0, 1, 0)
+
+
+        #glRotatef(-90, 1, 0, 0)
         #gluSphere(quadratic, 40, 140, 140)
         gluCylinder(quadratic, size, size, 8, 14, 14);
+        
         glPopMatrix()
         
         pygame.display.flip()
