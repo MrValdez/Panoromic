@@ -2,6 +2,8 @@
 #  - http://pyopengl.sourceforge.net/context/tutorials/nehe6.html
 #  - https://pythonprogramming.net/opengl-rotating-cube-example-pyopengl-tutorial/
 
+import os
+
 import pygame
 from pygame.locals import *
 
@@ -11,8 +13,9 @@ from OpenGL.GLU import *
 from PIL.Image import open
 
 def init():
-    pygame.init()
     display = (1024, 768)
+    os.environ["SDL_VIDEO_WINDOW_POS"] = "{},0".format(int(display[0]/6))
+    pygame.init()
     pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
     gluPerspective(45, (display[0]/display[1]), 0.1, 50.0)
 
@@ -21,31 +24,30 @@ def init():
 def generate_texture():
     glEnable(GL_TEXTURE_2D)
     textures = []
-    
+
     for file in ["bg.jpg", "bg_h.jpg", "bg_vh.jpg"]:
         im = open(file)
-
         try:
             ix, iy, image = im.size[0], im.size[1], im.tostring("raw", "RGBA", 0, -1)
         except SystemError:
             ix, iy, image = im.size[0], im.size[1], im.tostring("raw", "RGBX", 0, -1)
 
-        texture = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, texture)
-        glPixelStorei(GL_UNPACK_ALIGNMENT,1)
-        glTexImage2D(
-            GL_TEXTURE_2D, 0, 3, ix, iy, 0,
-            GL_RGBA, GL_UNSIGNED_BYTE, image
-        )
+        for filter, filter_name in ((GL_LINEAR,  "Linear"),
+                                    (GL_NEAREST, "Nearest")):
+            texture = glGenTextures(1)
+            glBindTexture(GL_TEXTURE_2D, texture)
+            glPixelStorei(GL_UNPACK_ALIGNMENT,1)
+            glTexImage2D(
+                GL_TEXTURE_2D, 0, 3, ix, iy, 0,
+                GL_RGBA, GL_UNSIGNED_BYTE, image
+            )
 
-        #glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        #glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter)
+            glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
 
-        data = (texture, file)
-        textures.append(data)
+            data = (texture, file, filter_name)
+            textures.append(data)
 
     return textures
     
@@ -57,9 +59,8 @@ def generate_qudratic():
 def main(quadratic, textures):
     current_texture = 0
     size = 4
-    auto_move = True
-    auto_move = False
-    
+    speed = 10
+    auto_move = True    
     use_sphere = True
     rotate = [0, 0]
         
@@ -74,8 +75,9 @@ def main(quadratic, textures):
         if keypress[pygame.K_SPACE] and not prev_keypress[pygame.K_SPACE]:
             current_texture = (current_texture + 1) % len(textures)
             data = textures[current_texture]
-            texture, file = data
+            texture, file, filter_name = data
             glBindTexture(GL_TEXTURE_2D, texture)
+            print(file, filter_name)
 
         if keypress[pygame.K_q] and not prev_keypress[pygame.K_q]:
             use_sphere = not use_sphere
@@ -93,8 +95,13 @@ def main(quadratic, textures):
         glTranslatef(0.0,0.0, -(size/2))  
 
         if auto_move:
-            glRotatef(rotate[0], 0, 1, 0)
-            rotate[0] += 0.5
+            rotate[0] += 0.05
+
+            if (keypress[pygame.K_LEFT] or
+                keypress[pygame.K_RIGHT] or
+                keypress[pygame.K_UP] or 
+                keypress[pygame.K_DOWN]):
+                auto_move = False
         else:
             if keypress[pygame.K_LEFT]:
                 rotate[0] += -0.1
@@ -104,15 +111,10 @@ def main(quadratic, textures):
                 rotate[1] += -0.1
             if keypress[pygame.K_DOWN]:
                 rotate[1] += +0.1
-            
-            rotate[0] = rotate[0] % 360
-            rotate[1] = rotate[1] % 360
-            speed = 10
-            
-            glRotatef(rotate[1] * speed, 1, 0, 0)
-            glRotatef(rotate[0] * speed, 0, 1, 0)
 
-        
+        glRotatef(rotate[1] * speed, 1, 0, 0)
+        glRotatef(rotate[0] * speed, 0, 1, 0)
+
         if use_sphere:
             glRotatef(-90, 1, 0, 0)
             glTranslatef(0, -size, 0)
