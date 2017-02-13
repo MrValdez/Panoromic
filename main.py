@@ -59,11 +59,10 @@ def main(quadratic, textures):
     size = 4
     auto_move = True
     auto_move = False
+    
+    use_sphere = True
     rotate = [0, 0]
-
-    #glTranslatef(0.0,0.0, -15.0)
-    glTranslatef(0.0,0.0, -(size / 2))
-
+        
     keypress = pygame.key.get_pressed()
     while True:
         prev_keypress = keypress
@@ -77,7 +76,9 @@ def main(quadratic, textures):
             data = textures[current_texture]
             texture, file = data
             glBindTexture(GL_TEXTURE_2D, texture)
-            print(file)
+
+        if keypress[pygame.K_q] and not prev_keypress[pygame.K_q]:
+            use_sphere = not use_sphere
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -87,8 +88,10 @@ def main(quadratic, textures):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         glPushMatrix()
-        glTranslatef(0, -3.8, 0)
-        
+
+        #glTranslatef(0.0,0.0, -15.0)
+        glTranslatef(0.0,0.0, -(size/2))  
+
         if auto_move:
             glRotatef(rotate[0], 0, 1, 0)
             rotate[0] += 0.5
@@ -101,14 +104,23 @@ def main(quadratic, textures):
                 rotate[1] += -0.1
             if keypress[pygame.K_DOWN]:
                 rotate[1] += +0.1
+            
+            rotate[0] = rotate[0] % 360
+            rotate[1] = rotate[1] % 360
             speed = 10
+            
             glRotatef(rotate[1] * speed, 1, 0, 0)
             glRotatef(rotate[0] * speed, 0, 1, 0)
 
-
-        #glRotatef(-90, 1, 0, 0)
-        #gluSphere(quadratic, 40, 140, 140)
-        gluCylinder(quadratic, size, size, 8, 14, 14);
+        
+        if use_sphere:
+            glRotatef(-90, 1, 0, 0)
+            glTranslatef(0, -size, 0)
+            gluSphere(quadratic, size*2, 140, 140)
+        else:
+            glTranslatef(0, -size, 0)
+            glRotatef(-90, 1, 0, 0)
+            gluCylinder(quadratic, size, size, 8, 14, 14);
         
         glPopMatrix()
         
