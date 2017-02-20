@@ -23,6 +23,8 @@ from PIL.Image import open
 
 screen = None
 resolution = (1024, 768)
+NormalText = None
+
 def init():
     os.environ["SDL_VIDEO_WINDOW_POS"] = "{},0".format(int(resolution[0]/6))
     pygame.init()
@@ -33,7 +35,7 @@ def init():
 
     glFrontFace(GL_CCW)
     global NormalText
-    NormalText = pygame.font.Font(None, 17)
+    NormalText = pygame.font.Font(None, 25)
 
 def generate_texture():
     glEnable(GL_TEXTURE_2D)
@@ -51,10 +53,8 @@ def generate_texture():
             texture = glGenTextures(1)
             glBindTexture(GL_TEXTURE_2D, texture)
             glPixelStorei(GL_UNPACK_ALIGNMENT,1)
-            glTexImage2D(
-                GL_TEXTURE_2D, 0, 3, ix, iy, 0,
-                GL_RGBA, GL_UNSIGNED_BYTE, image
-            )
+            glTexImage2D(GL_TEXTURE_2D, 0, 3, ix, iy, 0,
+                         GL_RGBA, GL_UNSIGNED_BYTE, image)
 
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter)
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter)
@@ -128,6 +128,7 @@ def main(quadratic, textures):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+        # draw cylinder/circle model
         texture = textures[current_texture][0]
         glBindTexture(GL_TEXTURE_2D, texture)
 
@@ -137,7 +138,7 @@ def main(quadratic, textures):
         glTranslatef(0.0,0.0, -(size/2))  
 
         if auto_move:
-            rotate[0] += 0.05
+            rotate[0] += 0.02
 
             if (keypress[pygame.K_LEFT] or
                 keypress[pygame.K_RIGHT] or
@@ -168,50 +169,47 @@ def main(quadratic, textures):
         
         glPopMatrix()
 
-        if 1:
-            glBindTexture(GL_TEXTURE_2D, texture_display)
+        # HUD
+        glBindTexture(GL_TEXTURE_2D, texture_display)
 
-            glDisable(GL_DEPTH_TEST)
-            glDepthMask(False)
-            
-            glMatrixMode(GL_PROJECTION)
-            glPushMatrix()
-            #glViewport(0, 0, resolution[0], resolution[1])
-            glLoadIdentity()
-            glOrtho(0, 1, 1, 0, 0, 1)
-            
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
+        glDisable(GL_DEPTH_TEST)
+        
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        #glViewport(0, 0, resolution[0], resolution[1])
+        glLoadIdentity()
+        glOrtho(0, 1, 1, 0, 0, 1)
+        
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
 
-            glEnable(GL_ALPHA_TEST)
-            glAlphaFunc(GL_GREATER, 0)
+        glEnable(GL_ALPHA_TEST)
+        glAlphaFunc(GL_GREATER, 0)
 
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-            glBlendFunc(GL_SRC_ALPHA, GL_DST_COLOR)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-            glBegin(GL_TRIANGLE_STRIP)
-            #glColor4f(0.5, 0.5, 1.0, 1.0)
-            glTexCoord2f(0, 0)
-            glVertex2i(0, 0)
-            glTexCoord2f(1, 0)
-            glVertex2i(1, 0)
-            glTexCoord2f(0, 1)
-            glVertex2i(0, 1)
-            glTexCoord2f(1, 1)
-            glVertex2i(1, 1)
-            glEnd()
+        glBegin(GL_TRIANGLE_STRIP)
+        glTexCoord2f(0, 0)
+        glVertex2i(0, 0)
+        glTexCoord2f(1, 0)
+        glVertex2i(1, 0)
+        glTexCoord2f(0, 1)
+        glVertex2i(0, 1)
+        glTexCoord2f(1, 1)
+        glVertex2i(1, 1)
+        glEnd()
 
-            glDisable(GL_ALPHA_TEST)
-            
-            glMatrixMode(GL_PROJECTION)
-            glPopMatrix()
-            glMatrixMode(GL_MODELVIEW)
+        glDisable(GL_BLEND)
+        glDisable(GL_ALPHA_TEST)
 
-            glPopMatrix()
-            glDepthMask(True)
-            glEnable(GL_DEPTH_TEST)
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+
+        glPopMatrix()
+        glEnable(GL_DEPTH_TEST)
         
         pygame.display.flip()
         pygame.time.wait(10)
