@@ -1,6 +1,12 @@
 # resources:
 #  - http://pyopengl.sourceforge.net/context/tutorials/nehe6.html
 #  - https://pythonprogramming.net/opengl-rotating-cube-example-pyopengl-tutorial/
+#  - http://cyrille.rossant.net/2d-graphics-rendering-tutorial-with-pyopengl/
+#  - http://stackoverflow.com/questions/9863969/updating-a-texture-in-opengl-with-glteximage2d/13248668#13248668
+#  - http://stackoverflow.com/questions/3887636/how-to-manipulate-texture-content-on-the-fly/10702468#10702468
+#  - https://wiki.tiker.net/PyCuda/Examples/GlInterop
+#  - http://python-opengl-examples.blogspot.com/2009/04/render-to-texture.html
+#  - https://groups.google.com/forum/#!topic/pyglet-users/0tjqel26oZU
 
 import os
 
@@ -9,17 +15,24 @@ from pygame.locals import *
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from OpenGL.arrays.vbo import VBO
+from OpenGL.GL.ARB.pixel_buffer_object import *
 
 from PIL.Image import open
 
+screen = None
+resolution = (1024, 768)
 def init():
-    display = (1024, 768)
-    os.environ["SDL_VIDEO_WINDOW_POS"] = "{},0".format(int(display[0]/6))
+    os.environ["SDL_VIDEO_WINDOW_POS"] = "{},0".format(int(resolution[0]/6))
     pygame.init()
-    pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
-    gluPerspective(45, (display[0]/display[1]), 0.1, 50.0)
+    global screen 
+    pygame.display.set_mode(resolution, DOUBLEBUF | OPENGL)
+    screen = pygame.Surface(resolution)
+    gluPerspective(45, (resolution[0]/resolution[1]), 0.1, 50.0)
 
     glFrontFace(GL_CCW)
+    global NormalText
+    NormalText = pygame.font.Font(None, 17)
 
 def generate_texture():
     glEnable(GL_TEXTURE_2D)
@@ -50,11 +63,15 @@ def generate_texture():
             textures.append(data)
 
     return textures
-    
+
 def generate_qudratic():
     quadratic = gluNewQuadric()
     gluQuadricTexture(quadratic, GL_TRUE);
     return quadratic
+
+#def print(message):
+#    output = NormalText.render(message, True, [255, 255, 255])
+#    screen.blit(output, [400, 200])
 
 def main(quadratic, textures):
     current_texture = 0
@@ -63,7 +80,22 @@ def main(quadratic, textures):
     auto_move = True    
     use_sphere = True
     rotate = [0, 0]
-        
+
+    screen.fill([128, 128, 128])
+    pygame.draw.circle(screen, [255, 255, 255], [int(1024/2), int(768/2)], 100)
+    print("test")
+    image = pygame.image.tostring (screen, "RGBA", True)
+    image_size = screen.get_size()
+ 
+    # generate a texture id
+    texture_display = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, texture_display)
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT,1)
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST)
+    gluBuild2DMipmaps(GL_TEXTURE_2D, 4, image_size[0], image_size[1], GL_RGBA, GL_UNSIGNED_BYTE, image)
+
     keypress = pygame.key.get_pressed()
     while True:
         prev_keypress = keypress
@@ -77,7 +109,7 @@ def main(quadratic, textures):
             data = textures[current_texture]
             texture, file, filter_name = data
             glBindTexture(GL_TEXTURE_2D, texture)
-            print(file, filter_name)
+            print("{}. {}".format(file, filter_name))
 
         if keypress[pygame.K_q] and not prev_keypress[pygame.K_q]:
             use_sphere = not use_sphere
@@ -89,7 +121,11 @@ def main(quadratic, textures):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+        texture = textures[current_texture][0]
+        glBindTexture(GL_TEXTURE_2D, texture)
+
         glPushMatrix()
+        gluPerspective(45, (resolution[0]/resolution[1]), 0.1, 50.0)
 
         #glTranslatef(0.0,0.0, -15.0)
         glTranslatef(0.0,0.0, -(size/2))  
@@ -125,10 +161,26 @@ def main(quadratic, textures):
             gluCylinder(quadratic, size, size, 8, 14, 14);
         
         glPopMatrix()
+
+        if 1:
+            glPushMatrix()
+            glViewport(0, 0, resolution[0], resolution[1])
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            glBindTexture(GL_TEXTURE_2D, texture_display)
+            glOrtho(0, resolution[0], 0, resolution[1], -1, 1)
+            glBegin(GL_TRIANGLE_STRIP)
+            glVertex2i(0, 0)
+            glVertex2i(1, 0)
+            glVertex2i(0, 1)
+            glVertex2i(1, 1)
+            glEnd()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
         
         pygame.display.flip()
         pygame.time.wait(10)
-    
+
 init()
 textures = generate_texture()
 quadratic = generate_qudratic()
