@@ -39,15 +39,15 @@ def generate_texture():
     glEnable(GL_TEXTURE_2D)
     textures = []
 
-    for file in ["bg.jpg", "bg_h.jpg", "bg_vh.jpg"]:
+    for file in ["bg_vh.jpg", "bg_h.jpg", "bg.jpg"]:
         im = open(file)
         try:
             ix, iy, image = im.size[0], im.size[1], im.tostring("raw", "RGBA", 0, -1)
         except SystemError:
             ix, iy, image = im.size[0], im.size[1], im.tostring("raw", "RGBX", 0, -1)
 
-        for filter, filter_name in ((GL_LINEAR,  "Linear"),
-                                    (GL_NEAREST, "Nearest")):
+        for filter, filter_name in ((GL_NEAREST, "Nearest"),
+                                    (GL_LINEAR,  "Linear")):
             texture = glGenTextures(1)
             glBindTexture(GL_TEXTURE_2D, texture)
             glPixelStorei(GL_UNPACK_ALIGNMENT,1)
@@ -120,7 +120,6 @@ def main(quadratic, textures):
 
         if keypress[pygame.K_q] and not prev_keypress[pygame.K_q]:
             use_sphere = not use_sphere
-            print("{}. {}".format(file, filter_name))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
